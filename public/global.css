@@ -4,3 +4,35 @@ body {
 .my-paper {
   padding: 10px;
 }
+.my-list {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+.piggy-bank {
+  padding: 5px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  border: 2px solid;
+  border-radius: 14px;
+}
+.piggy-bank.default {
+  background-color: white;
+  color: grey;
+  border-color: grey;
+}
+.piggy-bank.secondary {
+  background-color: white;
+  color: #9c27b0;
+  border-color: #9c27b0;
+}
+.piggy-bank .my-icon {
+  font-size: 5rem;
+}
+.piggy-bank .amount {
+  font-size: 2rem;
+}

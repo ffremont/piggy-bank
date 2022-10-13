@@ -1,19 +1,21 @@
 import { Paper } from "@mui/material";
 import { NumericFormat } from "react-number-format";
 
-export const Sumup = () => {
+type SumupProps = {
+  total: number;
+};
+
+export const Sumup = ({ total }: SumupProps) => {
   return (
     <Paper className="my-paper">
-      
-        <NumericFormat
+      <NumericFormat
         className="amount"
-          value={1234.5}
-          displayType="text"
-          allowLeadingZeros
-          thousandSeparator=" "
-          suffix="€"
-        />
-      
+        value={total}
+        displayType="text"
+        allowLeadingZeros
+        thousandSeparator=" "
+        suffix="€"
+      />
     </Paper>
   );
 };
