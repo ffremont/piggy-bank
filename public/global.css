@@ -1,6 +1,17 @@
 body {
   margin: 0 !important;
 }
+body,
+html,
+a,
+p,
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: 'Montserrat', sans-serif;
+}
 .my-paper {
   padding: 10px;
 }
@@ -9,8 +20,16 @@ body {
   gap: 10px;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+}
+.my-paper span.amount {
+  font-size: 2rem;
+  color: #1876d2;
+  font-weight: bold;
 }
 .piggy-bank {
+  width: 100px;
+  height: 140px;
   padding: 5px 20px;
   display: flex;
   flex-direction: column;
@@ -30,9 +49,17 @@ body {
   color: #9c27b0;
   border-color: #9c27b0;
 }
+.piggy-bank.primary {
+  background-color: white;
+  color: #1976d2;
+  border-color: #1976d2;
+}
 .piggy-bank .my-icon {
   font-size: 5rem;
 }
 .piggy-bank .amount {
   font-size: 2rem;
+}
+.my-select-item .my-icon {
+  margin-right: 10px !important;
 }

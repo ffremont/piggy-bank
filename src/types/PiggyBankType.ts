@@ -4,5 +4,4 @@ export type PiggyBankType = {
     label:string,
     icon:string,
     color: 'primary'|'secondary'|'default'
-    target?: number
 }

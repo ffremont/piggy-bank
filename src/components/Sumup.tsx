@@ -1,5 +1,6 @@
-import { Paper } from "@mui/material";
+import { Box, Button, Paper } from "@mui/material";
 import { NumericFormat } from "react-number-format";
+import MultipleStopIcon from "@mui/icons-material/MultipleStop";
 
 type SumupProps = {
   total: number;
@@ -7,7 +8,7 @@ type SumupProps = {
 
 export const Sumup = ({ total }: SumupProps) => {
   return (
-    <Paper className="my-paper">
+    <Paper className="my-paper" sx={{display:'flex'}}>
       <NumericFormat
         className="amount"
         value={total}
@@ -16,6 +17,12 @@ export const Sumup = ({ total }: SumupProps) => {
         thousandSeparator=" "
         suffix="€"
       />
+
+      <Box sx={{flex:1, display:'flex', alignItems:'end', justifyContent:'end'}}>
+      <Button variant="contained" startIcon={<MultipleStopIcon />}>
+        Opération
+      </Button>
+      </Box>
     </Paper>
   );
 };
