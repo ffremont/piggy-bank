@@ -9,7 +9,8 @@ import { AddPiggyBank } from "./components/AddPiggyBank";
 import { AddDialog } from "./components/AddDialog";
 import { OperationDialog } from "./components/OperationDialog";
 
-const LS_KEY = (nonce: string) => `piggyBank_${CryptoJS.SHA256(nonce)}`;
+const LS_KEY = (nonce: string, pin: string) =>
+  `piggyBank_${CryptoJS.SHA256(nonce+pin).toString().slice(-8)}`;
 const secretFactory = (nonce: string, pin: string) => `${nonce}_${pin}`;
 
 function App() {
@@ -20,8 +21,6 @@ function App() {
   const [pin, setPin] = useState<string>("");
   const [exportUrl, setExportUrl] = useState("");
   const nonce = useRef("");
-
-  
 
   const handleModifyOperation = (from: PiggyBankType, to: PiggyBankType) => {
     setItems(
@@ -55,18 +54,23 @@ function App() {
   useEffect(() => {
     nonce.current = window.location.pathname;
     // systématiquement on demande le pin
-    let myPin = "0000"; //window.prompt(`Code pin ? `)||'';
+    let myPin = window.prompt(`Code pin ? `) || "";
     setPin(myPin);
 
-    const cryptedLS = window.localStorage.getItem(LS_KEY(nonce.current));
-    const itemsFromLS = cryptedLS
-      ? JSON.parse(
-          CryptoJS.AES.decrypt(
-            cryptedLS,
-            secretFactory(nonce.current, myPin)
-          ).toString(CryptoJS.enc.Utf8)
-        )
-      : [];
+    const cryptedLS = window.localStorage.getItem(LS_KEY(nonce.current, myPin));
+    let itemsFromLS = [];
+    try {
+       itemsFromLS = cryptedLS
+        ? JSON.parse(
+            CryptoJS.AES.decrypt(
+              cryptedLS,
+              secretFactory(nonce.current, myPin)
+            ).toString(CryptoJS.enc.Utf8)
+          )
+        : [];
+    } catch (e) {
+      alert('Pin invalide, actualisez pour réitérer');
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const importEncryptDataLZU = urlParams.get("import");
@@ -88,7 +92,7 @@ function App() {
         importJson,
         secretFactory(nonce.current, myPin)
       ).toString();
-      window.localStorage.setItem(LS_KEY(nonce.current), cryptedData);
+      window.localStorage.setItem(LS_KEY(nonce.current, myPin), cryptedData);
 
       setItems(JSON.parse(importJson));
       window.location.href = `${window.location.origin}${window.location.pathname}`;
@@ -104,8 +108,8 @@ function App() {
         JSON.stringify(items),
         secretFactory(nonce.current, pin)
       ).toString();
-      window.localStorage.setItem(LS_KEY(nonce.current), cryptedData);
-      
+      window.localStorage.setItem(LS_KEY(nonce.current, pin), cryptedData);
+
       const compressed = (window as any).LZUTF8.compress(cryptedData, {
         outputEncoding: "Base64",
       });
@@ -145,11 +149,14 @@ function App() {
           <AddPiggyBank onClick={() => setAddShowDialog(true)} />
         </div>
         <Snackbar
+          sx={{ width: "calc(100% - 40px)" }}
           open={notifyOperation}
           autoHideDuration={6000}
           onClose={() => setNotifyOperation(false)}
         >
-          <Alert sx={{width:'100%'}} severity="success">Opération enregistrée</Alert>
+          <Alert sx={{ width: "100%" }} severity="success">
+            Opération enregistrée
+          </Alert>
         </Snackbar>
       </Container>
     </div>
