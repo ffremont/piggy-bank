@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Piggy Home Bank",
+  "name": "Gestion simplifiée de cagnottes",
   "icons": [
     {
       "src": "favicon.ico",
