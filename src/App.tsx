@@ -1,4 +1,4 @@
-import { Container } from "@mui/material";
+import { Alert, Container, Snackbar } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header";
 import { PiggyBank } from "./components/PiggyBank";
@@ -7,43 +7,46 @@ import { PiggyBankType } from "./types/PiggyBankType";
 import * as CryptoJS from "crypto-js";
 import { AddPiggyBank } from "./components/AddPiggyBank";
 import { AddDialog } from "./components/AddDialog";
-import { useLongPress } from "use-long-press";
+import { OperationDialog } from "./components/OperationDialog";
 
-const LS_KEY = "piggyBank";
+const LS_KEY = (nonce: string) => `piggyBank_${CryptoJS.SHA256(nonce)}`;
 const secretFactory = (nonce: string, pin: string) => `${nonce}_${pin}`;
 
 function App() {
   const [addShowDialog, setAddShowDialog] = useState(false);
-  const [items, setItems] = useState<PiggyBankType[]>([
-    {
-      amount: 1223,
-      id: "",
-      label: "Epargne",
-      icon: "settings",
-      color: "default",
-    },
-    {
-      amount: 1223,
-      id: "",
-      label: "Epargne",
-      icon: "holiday_village",
-      color: "secondary",
-    },
-  ]);
+  const [addShowOperation, setAddShowOperation] = useState(false);
+  const [notifyOperation, setNotifyOperation] = useState(false);
+  const [items, setItems] = useState<PiggyBankType[]>([]);
   const [pin, setPin] = useState<string>("");
   const [exportUrl, setExportUrl] = useState("");
   const nonce = useRef("");
 
   
-  const handleOnDeletePiggyBank  = (item: PiggyBankType) => {
-    if(window.confirm(`Confirmez-vous la suppression de "${item.label}" ?`)){
-      setItems(items.filter(i => i.id !== item.id));
+
+  const handleModifyOperation = (from: PiggyBankType, to: PiggyBankType) => {
+    setItems(
+      items.map((i) => {
+        if (i.id === from.id) {
+          return from;
+        } else if (i.id === to.id) {
+          return to;
+        } else {
+          return i;
+        }
+      })
+    );
+    setNotifyOperation(true);
+    setAddShowOperation(false);
+  };
+  const handleOnDeletePiggyBank = (item: PiggyBankType) => {
+    if (window.confirm(`Confirmez-vous la suppression de "${item.label}" ?`)) {
+      setItems(items.filter((i) => i.id !== item.id));
     }
   };
   const handleAddPiggyBank = (item: PiggyBankType) => {
     setItems([item, ...items]);
     setAddShowDialog(false);
-  }
+  };
 
   /**
    * @see https://github.com/brix/crypto-js
@@ -55,7 +58,7 @@ function App() {
     let myPin = "0000"; //window.prompt(`Code pin ? `)||'';
     setPin(myPin);
 
-    const cryptedLS = window.localStorage.getItem(LS_KEY);
+    const cryptedLS = window.localStorage.getItem(LS_KEY(nonce.current));
     const itemsFromLS = cryptedLS
       ? JSON.parse(
           CryptoJS.AES.decrypt(
@@ -63,24 +66,7 @@ function App() {
             secretFactory(nonce.current, myPin)
           ).toString(CryptoJS.enc.Utf8)
         )
-      : [
-          {
-            amount: 1223,
-            id: "oo",
-            label: "Epargne",
-            icon: "settings",
-            target: 5000,
-            color: "default",
-          },
-          {
-            amount: 1223,
-            id: "k",
-            label: "Epargne",
-            icon: "holiday_village",
-            target: 5000,
-            color: "secondary",
-          },
-        ];
+      : [];
 
     const urlParams = new URLSearchParams(window.location.search);
     const importEncryptDataLZU = urlParams.get("import");
@@ -102,8 +88,9 @@ function App() {
         importJson,
         secretFactory(nonce.current, myPin)
       ).toString();
-      window.localStorage.setItem(LS_KEY, cryptedData);
+      window.localStorage.setItem(LS_KEY(nonce.current), cryptedData);
 
+      setItems(JSON.parse(importJson));
       window.location.href = `${window.location.origin}${window.location.pathname}`;
     } else {
       console.log("init : ", itemsFromLS);
@@ -117,7 +104,8 @@ function App() {
         JSON.stringify(items),
         secretFactory(nonce.current, pin)
       ).toString();
-      window.localStorage.setItem(LS_KEY, cryptedData);
+      window.localStorage.setItem(LS_KEY(nonce.current), cryptedData);
+      
       const compressed = (window as any).LZUTF8.compress(cryptedData, {
         outputEncoding: "Base64",
       });
@@ -136,13 +124,33 @@ function App() {
           onHide={() => setAddShowDialog(false)}
           onAdd={handleAddPiggyBank}
         />
-        <Sumup total={items.map(item => item.amount).reduce((a,b) => a+b, 0)} />
+        <OperationDialog
+          show={addShowOperation}
+          onHide={() => setAddShowOperation(false)}
+          onModify={handleModifyOperation}
+          items={items}
+        />
+        <Sumup
+          onClickOperation={() => setAddShowOperation(true)}
+          total={items.map((item) => item.amount).reduce((a, b) => a + b, 0)}
+        />
         <div className="my-list">
           {items.map((item, index) => (
-            <PiggyBank onDelete={() => handleOnDeletePiggyBank(item)} {...item} key={index} />
+            <PiggyBank
+              onDelete={() => handleOnDeletePiggyBank(item)}
+              {...item}
+              key={index}
+            />
           ))}
-          <AddPiggyBank onClick={(() => setAddShowDialog(true))} />
+          <AddPiggyBank onClick={() => setAddShowDialog(true)} />
         </div>
+        <Snackbar
+          open={notifyOperation}
+          autoHideDuration={6000}
+          onClose={() => setNotifyOperation(false)}
+        >
+          <Alert sx={{width:'100%'}} severity="success">Opération enregistrée</Alert>
+        </Snackbar>
       </Container>
     </div>
   );

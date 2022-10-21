@@ -3,10 +3,11 @@ import { NumericFormat } from "react-number-format";
 import MultipleStopIcon from "@mui/icons-material/MultipleStop";
 
 type SumupProps = {
-  total: number;
+  total: number
+  onClickOperation: () => void
 };
 
-export const Sumup = ({ total }: SumupProps) => {
+export const Sumup = ({ total, onClickOperation }: SumupProps) => {
   return (
     <Paper className="my-paper" sx={{display:'flex'}}>
       <NumericFormat
@@ -19,7 +20,7 @@ export const Sumup = ({ total }: SumupProps) => {
       />
 
       <Box sx={{flex:1, display:'flex', alignItems:'end', justifyContent:'end'}}>
-      <Button variant="contained" startIcon={<MultipleStopIcon />}>
+      <Button variant="contained" onClick={onClickOperation} startIcon={<MultipleStopIcon />}>
         Opération
       </Button>
       </Box>
