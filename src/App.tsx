@@ -1,4 +1,4 @@
-import { Alert, Container, Snackbar } from "@mui/material";
+import { Alert, Button, Container, Snackbar, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header";
 import { PiggyBank } from "./components/PiggyBank";
@@ -10,11 +10,12 @@ import { AddDialog } from "./components/AddDialog";
 import { OperationDialog } from "./components/OperationDialog";
 
 const LS_KEY = (nonce: string, pin: string) =>
-  `piggyBank_${CryptoJS.SHA256(nonce+pin).toString().slice(-8)}`;
+  `piggyBank_${CryptoJS.SHA256(nonce).toString().slice(-8)}`;
 const secretFactory = (nonce: string, pin: string) => `${nonce}_${pin}`;
 
 function App() {
   const [addShowDialog, setAddShowDialog] = useState(false);
+  const [invalidPin, setInvalidPin] = useState(false);
   const [addShowOperation, setAddShowOperation] = useState(false);
   const [notifyOperation, setNotifyOperation] = useState(false);
   const [items, setItems] = useState<PiggyBankType[]>([]);
@@ -60,7 +61,7 @@ function App() {
     const cryptedLS = window.localStorage.getItem(LS_KEY(nonce.current, myPin));
     let itemsFromLS = [];
     try {
-       itemsFromLS = cryptedLS
+      itemsFromLS = cryptedLS
         ? JSON.parse(
             CryptoJS.AES.decrypt(
               cryptedLS,
@@ -69,7 +70,8 @@ function App() {
           )
         : [];
     } catch (e) {
-      alert('Pin invalide, actualisez pour réitérer');
+      setInvalidPin(true);
+      return;
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -103,7 +105,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (pin) {
+    if (pin && !invalidPin) {
       const cryptedData = CryptoJS.AES.encrypt(
         JSON.stringify(items),
         secretFactory(nonce.current, pin)
@@ -122,43 +124,56 @@ function App() {
   return (
     <div className="App">
       <Header exportUrl={exportUrl} />
-      <Container sx={{ marginTop: "20px" }}>
-        <AddDialog
-          show={addShowDialog}
-          onHide={() => setAddShowDialog(false)}
-          onAdd={handleAddPiggyBank}
-        />
-        <OperationDialog
-          show={addShowOperation}
-          onHide={() => setAddShowOperation(false)}
-          onModify={handleModifyOperation}
-          items={items}
-        />
-        <Sumup
-          onClickOperation={() => setAddShowOperation(true)}
-          total={items.map((item) => item.amount).reduce((a, b) => a + b, 0)}
-        />
-        <div className="my-list">
-          {items.map((item, index) => (
-            <PiggyBank
-              onDelete={() => handleOnDeletePiggyBank(item)}
-              {...item}
-              key={index}
-            />
-          ))}
-          <AddPiggyBank onClick={() => setAddShowDialog(true)} />
-        </div>
-        <Snackbar
-          sx={{ width: "calc(100% - 40px)" }}
-          open={notifyOperation}
-          autoHideDuration={6000}
-          onClose={() => setNotifyOperation(false)}
-        >
-          <Alert sx={{ width: "100%" }} severity="success">
-            Opération enregistrée
-          </Alert>
-        </Snackbar>
-      </Container>
+      {invalidPin && (
+        <Container sx={{ marginTop: "20px", display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column' }}>
+          <Typography variant="h2">Code d'accès invalide</Typography>
+          <Button onClick={() => window.location.reload()} type="button">
+            Réessayer
+          </Button>
+        </Container>
+      )}
+      {!invalidPin && (
+        <Container sx={{ marginTop: "20px" }}>
+          <AddDialog
+            show={addShowDialog}
+            onHide={() => setAddShowDialog(false)}
+            onAdd={handleAddPiggyBank}
+          />
+          <OperationDialog
+            show={addShowOperation}
+            onHide={() => setAddShowOperation(false)}
+            onModify={handleModifyOperation}
+            items={items}
+          />
+          <Sumup
+            onClickOperation={() => setAddShowOperation(true)}
+            total={items.map((item) => item.amount).reduce((a, b) => a + b, 0)}
+          />
+          <div className="my-list">
+            {items.map((item, index) => (
+              <PiggyBank
+                onDelete={() => handleOnDeletePiggyBank(item)}
+                {...item}
+                key={index}
+              />
+            ))}
+            <AddPiggyBank onClick={() => setAddShowDialog(true)} />
+          </div>
+          <Snackbar
+            sx={{ width: "calc(100% - 40px)" }}
+            open={notifyOperation}
+            autoHideDuration={6000}
+            onClose={() => setNotifyOperation(false)}
+          >
+            <Alert sx={{ width: "100%" }} severity="success">
+              Opération enregistrée
+            </Alert>
+          </Snackbar>
+        </Container>
+      )}
     </div>
   );
 }
