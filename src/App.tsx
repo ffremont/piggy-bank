@@ -11,6 +11,7 @@ import { OperationDialog } from "./components/OperationDialog";
 
 const LS_KEY = (nonce: string, pin: string) =>
   `piggyBank_${CryptoJS.SHA256(nonce).toString().slice(-8)}`;
+const LS_VERSION_KEY = (mainKey: string) => `v${mainKey}`;
 const secretFactory = (nonce: string, pin: string) => `${nonce}_${pin}`;
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
   const [pin, setPin] = useState<string>("");
   const [exportUrl, setExportUrl] = useState("");
   const nonce = useRef("");
+  const version = useRef(1);
 
   const handleModifyOperation = (from: PiggyBankType, to: PiggyBankType) => {
     setItems(
@@ -58,7 +60,9 @@ function App() {
     let myPin = window.prompt(`Code pin ? `) || "";
     setPin(myPin);
 
-    const cryptedLS = window.localStorage.getItem(LS_KEY(nonce.current, myPin));
+    const mainLSKey = LS_KEY(nonce.current, myPin);
+    const cryptedLS = window.localStorage.getItem(mainLSKey);
+    const versionLS = JSON.parse(window.localStorage.getItem(LS_VERSION_KEY(mainLSKey))||"1");
     let itemsFromLS = [];
     try {
       itemsFromLS = cryptedLS
@@ -76,9 +80,10 @@ function App() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const importEncryptDataLZU = urlParams.get("import");
+    const importVersion = parseInt(urlParams.get("version")||"1", 10);
     if (
       importEncryptDataLZU &&
-      window.confirm(`Confirmez-vous l'importation ?`)
+      window.confirm(`Confirmez-vous l'importation v${importVersion} ?`)
     ) {
       const encryptedData = (window as any).LZUTF8.decompress(
         importEncryptDataLZU,
@@ -89,18 +94,21 @@ function App() {
         secretFactory(nonce.current, myPin)
       ).toString(CryptoJS.enc.Utf8);
 
-      console.log("imported json " + importJson);
       const cryptedData = CryptoJS.AES.encrypt(
         importJson,
         secretFactory(nonce.current, myPin)
       ).toString();
-      window.localStorage.setItem(LS_KEY(nonce.current, myPin), cryptedData);
+      const mainLS = LS_KEY(nonce.current, myPin);
+      const newVersion = importVersion + 1;
+      window.localStorage.setItem(mainLS, cryptedData);
+      window.localStorage.setItem(LS_VERSION_KEY(mainLS), JSON.stringify(newVersion));
 
       setItems(JSON.parse(importJson));
+      version.current = newVersion;
       window.location.href = `${window.location.origin}${window.location.pathname}`;
     } else {
-      console.log("init : ", itemsFromLS);
       setItems(itemsFromLS);
+      version.current = versionLS;
     }
   }, []);
 
@@ -116,7 +124,7 @@ function App() {
         outputEncoding: "Base64",
       });
       setExportUrl(
-        `${window.location.origin}${window.location.pathname}?import=${compressed}`
+        `${window.location.origin}${window.location.pathname}?import=${compressed}&version=${version.current}`
       );
     }
   }, [items, pin]);
@@ -125,10 +133,15 @@ function App() {
     <div className="App">
       <Header exportUrl={exportUrl} />
       {invalidPin && (
-        <Container sx={{ marginTop: "20px", display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column' }}>
+        <Container
+          sx={{
+            marginTop: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+          }}
+        >
           <Typography variant="h2">Code d'accès invalide</Typography>
           <Button onClick={() => window.location.reload()} type="button">
             Réessayer
